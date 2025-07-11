@@ -1,0 +1,1 @@
+stable-diffusion-2-1-base is too large to push to repo, download its components from here: https://huggingface.co/stabilityai/stable-diffusion-2-1-base/tree/main
