@@ -37,6 +37,26 @@ heatmap_height, heatmap_width = 64, 48
 scaler_height = input_image_height / heatmap_height
 scaler_width = input_image_width / heatmap_width
 
+KEYPOINT_IDX = {
+    "nose": 0,
+    "left_eye": 1,
+    "right_eye": 2,
+    "left_ear": 3,
+    "right_ear": 4,
+    "left_shoulder": 5,
+    "right_shoulder": 6,
+    "left_elbow": 7,
+    "right_elbow": 8,
+    "left_wrist": 9,
+    "right_wrist": 10,
+    "left_hip": 11,
+    "right_hip": 12,
+    "left_knee": 13,
+    "right_knee": 14,
+    "left_ankle": 15,
+    "right_ankle": 16
+}
+
 def run_pose_estimation(image_bytes: bytes):
     # Convert bytes to image array
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
@@ -64,20 +84,32 @@ def check_posture(keypoints):
     Returns (is_good_posture: bool)
     """
 
-    get = lambda part: np.array(keypoints[keypoints[part]])
-    safe_get = lambda part: np.array(keypoints[part]) if part in keypoints else None
+    # required keypoints (err if missing)
+    left_shoulder = np.array(keypoints[KEYPOINT_IDX["left_shoulder"]])
+    right_shoulder = np.array(keypoints[KEYPOINT_IDX["right_shoulder"]])
+    left_hip = np.array(keypoints[KEYPOINT_IDX["left_hip"]])
+    right_hip = np.array(keypoints[KEYPOINT_IDX["right_hip"]])
+    left_ear = np.array(keypoints[KEYPOINT_IDX["left_ear"]])
+    right_ear = np.array(keypoints[KEYPOINT_IDX["right_ear"]])
+    left_elbow = np.array(keypoints[KEYPOINT_IDX["left_elbow"]])
+    right_elbow = np.array(keypoints[KEYPOINT_IDX["right_elbow"]])
+    left_wrist = np.array(keypoints[KEYPOINT_IDX["left_wrist"]])
+    right_wrist = np.array(keypoints[KEYPOINT_IDX["right_wrist"]])
 
-    # Required keypoints
-    left_shoulder, right_shoulder = get("left_shoulder"), get("right_shoulder")
-    left_hip, right_hip = get("left_hip"), get("right_hip")
-    left_ear, right_ear = get("left_ear"), get("right_ear")
-    left_elbow, right_elbow = get("left_elbow"), get("right_elbow")
-    left_wrist, right_wrist = get("left_wrist"), get("right_wrist")
+    # Optional keypoints (None if out of range or missing)
+    def get_optional(part):
+        idx = KEYPOINT_IDX.get(part)
+        if idx is not None and idx < len(keypoints):
+            pt = keypoints[idx]
+            if pt is not None:
+                return np.array(pt)
+        return None
 
-    # Optional keypoints
-    nose = safe_get("nose")
-    left_eye, right_eye = safe_get("left_eye"), safe_get("right_eye")
-    left_knee, right_knee = safe_get("left_knee"), safe_get("right_knee")
+    nose = get_optional("nose")
+    left_eye = get_optional("left_eye")
+    right_eye = get_optional("right_eye")
+    left_knee = get_optional("left_knee")
+    right_knee = get_optional("right_knee")
 
     # Midpoints and distances
     mid_shoulder = (left_shoulder + right_shoulder) / 2
@@ -152,6 +184,3 @@ def check_posture(keypoints):
             flags.append("reclined or slumped sitting position")
 
     return len(flags) == 0
-    # return flags if flags else True
-    # can also return flags to indicate specific issues
-    #return len(flags) == 0, flags if flags else None
