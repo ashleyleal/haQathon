@@ -1,4 +1,4 @@
-  'use client';
+'use client';
 
 import React, { useRef, useEffect, useState } from 'react';
 
@@ -6,6 +6,11 @@ const Home: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isGood, setIsGood] = useState<boolean | null>(null);
+  
+  // Bad posture tracking
+  const [badPostureStartTime, setBadPostureStartTime] = useState<number | null>(null);
+  const [badPostureDuration, setBadPostureDuration] = useState<number>(0);
+  const [isInBadPosture, setIsInBadPosture] = useState<boolean>(false);
 
   // Load beep sound
   const beepRef = useRef<HTMLAudioElement | null>(null);
@@ -81,11 +86,58 @@ const Home: React.FC = () => {
     }
   };
 
+  // Update bad posture duration
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (isInBadPosture) {
+      timer = setInterval(() => {
+        setBadPostureDuration((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setBadPostureDuration(0);
+    }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [isInBadPosture]);
+
+  useEffect(() => {
+    if (isGood === false) {
+      if (!isInBadPosture) {
+        // Start tracking bad posture
+        setIsInBadPosture(true);
+        setBadPostureStartTime(Date.now());
+      }
+      if (badPostureDuration >= 5 && beepRef.current) {
+        beepRef.current.play().catch((err) => console.error('Beep error:', err));
+      }
+    } else {
+      // Reset bad posture tracking when posture is good
+      setIsInBadPosture(false);
+      setBadPostureStartTime(null);
+      setBadPostureDuration(0);
+    }
+  }, [isGood, badPostureDuration, isInBadPosture]);
+
+  const formatDuration = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
   const backgroundColor = isGood === null
     ? '#f9f9f9'
     : isGood
     ? '#d1f5d3'
-    : '#f8d7da';
+    : badPostureDuration >= 120 // 2 minutes - Critical level
+    ? '#721c24' // Very dark red
+    : badPostureDuration >= 60  // 1 minute - Warning level
+    ? '#dc3545' // Dark red
+    : '#f8d7da'; // Light red - Initial bad posture
 
   const headerText = isGood === null
     ? 'Analyzing posture...'
@@ -106,30 +158,56 @@ const Home: React.FC = () => {
         fontFamily: 'Segoe UI, sans-serif',
         transition: 'background-color 0.3s ease',
         padding: '2rem',
+        position: 'relative',
       }}
     >
+      {/* Stopwatch for bad posture duration */}
+      {isInBadPosture && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '2rem',
+            right: '2rem',
+            padding: '1rem 2rem',
+            borderRadius: '12px',
+            backgroundColor: '#fff3cd',
+            border: '2px solid #ffeaa7',
+            color: '#856404',
+            fontSize: '1.4rem',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 1000,
+            minWidth: '200px',
+          }}
+        >
+          ⏱️ Bad posture for:<br />
+          <span style={{ fontSize: '1.6rem', color: '#d63384' }}>
+            {formatDuration(badPostureDuration)}
+          </span>
+        </div>
+      )}
      
-<h1
-  style={{
-    marginBottom: '1.5rem',
-    fontSize: '1.5rem',
-    padding: '0.75rem 1.5rem',
-    borderRadius: '8px',
-    backgroundColor:
-      isGood === null
-        ? '#ffffff'
-        : isGood
-        ? '#f0fff4' // very light green
-        : '#fff5f5', // very light red
-    color: '#222',
-    boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
-    border: '1px solid #e0e0e0',
-    transition: 'background-color 0.3s ease',
-  }}
->
-  {headerText}
-</h1>
-
+      <h1
+        style={{
+          marginBottom: '1.5rem',
+          fontSize: '1.5rem',
+          padding: '0.75rem 1.5rem',
+          borderRadius: '8px',
+          backgroundColor:
+            isGood === null
+              ? '#ffffff'
+              : isGood
+              ? '#f0fff4' // very light green
+              : '#fff5f5', // very light red
+          color: '#222',
+          boxShadow: '0 2px 6px rgba(0, 0, 0, 0.05)',
+          border: '1px solid #e0e0e0',
+          transition: 'background-color 0.3s ease',
+        }}
+      >
+        {headerText}
+      </h1>
 
       <video
         ref={videoRef}
