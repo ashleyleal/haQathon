@@ -61,10 +61,8 @@ def run_pose_estimation(image_bytes: bytes):
 def check_posture(keypoints):
     """
     Check sitting posture based on visible keypoints.
-    Returns (is_good_posture: bool, flags: List[str])
+    Returns (is_good_posture: bool)
     """
-
-    import numpy as np
 
     get = lambda part: np.array(keypoints[keypoints[part]])
     safe_get = lambda part: np.array(keypoints[part]) if part in keypoints else None
@@ -91,12 +89,12 @@ def check_posture(keypoints):
     # 1. Forward Head Posture 
     if nose is not None:
         nose_offset = nose[0] - mid_shoulder[0]
-        if nose_offset > 0.25 * shoulder_width:
+        if nose_offset > 0.20 * shoulder_width:
             flags.append("forward head posture (nose)")
     else:
         left_ear_offset = left_ear[0] - left_shoulder[0]
         right_ear_offset = right_ear[0] - right_shoulder[0]
-        if left_ear_offset > 0.25 * shoulder_width or right_ear_offset > 0.25 * shoulder_width:
+        if left_ear_offset > 0.20 * shoulder_width or right_ear_offset > 0.20 * shoulder_width:
             flags.append("forward head posture (ears)")
 
     # 2. Uneven Shoulders
