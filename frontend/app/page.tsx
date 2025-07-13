@@ -15,6 +15,29 @@ const Home: React.FC = () => {
   // Load beep sound
   const beepRef = useRef<HTMLAudioElement | null>(null);
 
+  // Create beep sound
+  const playBeep = () => {
+    try {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800; // Frequency in Hz
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    } catch (error) {
+      console.error('Error playing beep:', error);
+    }
+  };
+
   useEffect(() => {
     const getVideo = async () => {
       try {
@@ -72,9 +95,6 @@ const Home: React.FC = () => {
           const result = await response.json();
           if (response.ok) {
             setIsGood(result.good);
-            if (result.good === false && beepRef.current) {
-              beepRef.current.play().catch((err) => console.error('Beep error:', err));
-            }
           } else {
             setIsGood(false);
           }
@@ -112,8 +132,12 @@ const Home: React.FC = () => {
         setIsInBadPosture(true);
         setBadPostureStartTime(Date.now());
       }
-      if (badPostureDuration >= 5 && beepRef.current) {
-        beepRef.current.play().catch((err) => console.error('Beep error:', err));
+      if (badPostureDuration == 5) {
+        playBeep();
+      } else if (badPostureDuration > 60 && badPostureDuration < 63){ // play for 3 seconds
+        playBeep();
+      } else if (badPostureDuration >= 120) { // play forever
+        playBeep();
       }
     } else {
       // Reset bad posture tracking when posture is good
@@ -161,7 +185,7 @@ const Home: React.FC = () => {
         position: 'relative',
       }}
     >
-      {/* Stopwatch for bad posture duration */}
+      {/* Stopwatch for bad posture duration - positioned on the right */}
       {isInBadPosture && (
         <div
           style={{
@@ -222,7 +246,6 @@ const Home: React.FC = () => {
         }}
       />
       <canvas ref={canvasRef} style={{ display: 'none' }} />
-      <audio ref={beepRef} src="https://www.soundjay.com/buttons/sounds/beep-07.mp3" preload="auto" />
     </div>
   );
 };
