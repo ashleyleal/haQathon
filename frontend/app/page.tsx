@@ -5,7 +5,9 @@ import React, { useRef, useEffect, useState } from 'react';
 const Home: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isGood, setIsGood] = useState<boolean | null>(null);
+  const [keypoints, setKeypoints] = useState<Array<[number, number]>>([]);
   
   // Bad posture tracking
   const [badPostureStartTime, setBadPostureStartTime] = useState<number | null>(null);
@@ -95,16 +97,83 @@ const Home: React.FC = () => {
           const result = await response.json();
           if (response.ok) {
             setIsGood(result.good);
+            // exclude wrist, ankle and knee
+            setKeypoints(result.keypoints.slice(0, 9).concat(result.keypoints.slice(11, 13)) || []);
           } else {
-            setIsGood(false);
+            setIsGood(null);
+            setKeypoints([]);
           }
         } catch (error) {
           console.error('Error sending image to backend:', error);
-          setIsGood(false);
+          setIsGood(null);
         }
       }
     }
   };
+
+  // Draw keypoints on overlay canvas
+  const drawKeypoints = () => {
+    const overlayCanvas = overlayCanvasRef.current;
+    const video = videoRef.current;
+    if (!overlayCanvas || !video || keypoints.length === 0) return;
+
+    const context = overlayCanvas.getContext('2d');
+    if (!context) return;
+
+    // Clear canvas
+    context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+    
+    const scaleX = 640 / 256;
+    const scaleY = 480 / 192;
+
+    const keypointNames = [
+      "nose", "left_eye", "right_eye", "left_ear", "right_ear",
+      "left_shoulder", "right_shoulder", "left_elbow", "right_elbow",
+      "left_wrist", "right_wrist", "left_hip", "right_hip"
+    ];
+
+    const connections = [[1, 2], [3, 4], [5, 6], [7, 8], [11, 12]];
+
+    // Draw connection lines
+    context.strokeStyle = isGood ? '#28a745' : '#dc3545';
+    context.lineWidth = 2;
+    connections.forEach(([startIdx, endIdx]) => {
+      if (startIdx < keypoints.length && endIdx < keypoints.length) {
+        const [y1, x1] = keypoints[startIdx];
+        const [y2, x2] = keypoints[endIdx];
+        
+        context.beginPath();
+        context.moveTo(x1 * scaleX, y1 * scaleY);
+        context.lineTo(x2 * scaleX, y2 * scaleY);
+        context.stroke();
+      }
+    });
+
+    keypoints.forEach(([y, x], index) => {
+      const scaledX = x * scaleX;
+      const scaledY = y * scaleY;
+
+      // Draw circle
+      context.beginPath();
+      context.arc(scaledX, scaledY, 4, 0, 2 * Math.PI);
+      context.fillStyle = isGood ? '#28a745' : '#dc3545';
+      context.fill();
+      context.strokeStyle = '#ffffff';
+      context.lineWidth = 1;
+      context.stroke();
+
+      // labels
+      context.fillStyle = '#ffffff';
+      context.font = '10px Arial';
+      context.fillText(keypointNames[index] || index.toString(), scaledX + 6, scaledY - 6);
+    
+    });
+  };
+
+  // Update overlay when keypoints change
+  useEffect(() => {
+    drawKeypoints();
+  }, [keypoints, isGood]);
 
   // Update bad posture duration
   useEffect(() => {
@@ -233,18 +302,35 @@ const Home: React.FC = () => {
         {headerText}
       </h1>
 
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        width={640}
-        height={480}
-        style={{
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          marginBottom: '1rem',
-        }}
-      />
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          width={640}
+          height={480}
+          style={{
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            marginBottom: '1rem',
+          }}
+        />
+        <canvas
+          ref={overlayCanvasRef}
+          width={640}
+          height={480}
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            borderRadius: '8px',
+            pointerEvents: 'none',
+            border: '2px solid white',
+            boxSizing: 'border-box',
+          }}
+        />
+      </div>
+      
       <canvas ref={canvasRef} style={{ display: 'none' }} />
     </div>
   );
