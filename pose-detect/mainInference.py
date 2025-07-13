@@ -118,46 +118,46 @@ def check_posture(keypoints):
 
     flags = []
 
-    # 1. Forward Head Posture 
+    # 1. Forward Head Posture
     if nose is not None:
-        nose_offset = nose[0] - mid_shoulder[0]
+        nose_offset = nose[1] - mid_shoulder[1]
         if nose_offset > 0.20 * shoulder_width:
             flags.append("forward head posture (nose)")
     else:
-        left_ear_offset = left_ear[0] - left_shoulder[0]
-        right_ear_offset = right_ear[0] - right_shoulder[0]
+        left_ear_offset = left_ear[1] - left_shoulder[1]
+        right_ear_offset = right_ear[1] - right_shoulder[1]
         if left_ear_offset > 0.20 * shoulder_width or right_ear_offset > 0.20 * shoulder_width:
             flags.append("forward head posture (ears)")
 
-    # 2. Uneven Shoulders
-    shoulder_height_diff = abs(left_shoulder[1] - right_shoulder[1])
+    # 2. Uneven Shoulders (vertical difference)
+    shoulder_height_diff = abs(left_shoulder[0] - right_shoulder[0])
     if shoulder_height_diff > 0.10 * shoulder_width:
         flags.append("uneven shoulders")
 
-    # 3. Slouching
-    avg_shoulder_y = (left_shoulder[1] + right_shoulder[1]) / 2
-    avg_hip_y = (left_hip[1] + right_hip[1]) / 2
+    # 3. Slouching (vertical distance)
+    avg_shoulder_y = (left_shoulder[0] + right_shoulder[0]) / 2
+    avg_hip_y = (left_hip[0] + right_hip[0]) / 2
     if avg_shoulder_y - avg_hip_y > 0.25 * shoulder_width:
         flags.append("slouching")
 
-    # 4. Lateral Lean
-    lateral_shift = abs(mid_shoulder[0] - mid_hip[0])
+    # 4. Lateral Lean (horizontal shift)
+    lateral_shift = abs(mid_shoulder[1] - mid_hip[1])
     if lateral_shift > 0.15 * shoulder_width:
         flags.append("leaning to one side")
 
     # 5. Hunched Back / Rolled Shoulders
-    if (left_elbow[0] < left_shoulder[0] - 0.2 * shoulder_width or
-        right_elbow[0] > right_shoulder[0] + 0.2 * shoulder_width):
+    if (left_elbow[1] < left_shoulder[1] - 0.2 * shoulder_width or
+        right_elbow[1] > right_shoulder[1] + 0.2 * shoulder_width):
         flags.append("hunched back or rolled shoulders")
 
     # 6. Elevated Shoulders
-    left_shoulder_ear_dist = abs(left_shoulder[1] - left_ear[1])
-    right_shoulder_ear_dist = abs(right_shoulder[1] - right_ear[1])
+    left_shoulder_ear_dist = abs(left_shoulder[0] - left_ear[0])
+    right_shoulder_ear_dist = abs(right_shoulder[0] - right_ear[0])
     if left_shoulder_ear_dist < 0.1 * shoulder_width or right_shoulder_ear_dist < 0.1 * shoulder_width:
         flags.append("elevated shoulders")
 
     # 7. Asymmetrical Arms
-    wrist_height_diff = abs(left_wrist[1] - right_wrist[1])
+    wrist_height_diff = abs(left_wrist[0] - right_wrist[0])
     if wrist_height_diff > 0.15 * shoulder_width:
         flags.append("asymmetrical arm positioning")
 
@@ -173,13 +173,13 @@ def check_posture(keypoints):
 
     # 10. Head Tilt
     if left_eye is not None and right_eye is not None:
-        eye_height_diff = abs(left_eye[1] - right_eye[1])
+        eye_height_diff = abs(left_eye[0] - right_eye[0])
         if eye_height_diff > 0.05 * shoulder_width:
             flags.append("head tilted to one side")
 
     # 11. Reclined Sitting Posture
     if left_knee is not None and right_knee is not None:
-        avg_knee_y = (left_knee[1] + right_knee[1]) / 2
+        avg_knee_y = (left_knee[0] + right_knee[0]) / 2
         if avg_hip_y > avg_knee_y:  # hips lower than knees = likely reclined
             flags.append("reclined or slumped sitting position")
 
