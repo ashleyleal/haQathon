@@ -78,8 +78,16 @@ while True:
     frame = (hwc_frame_processed*255).astype(np.uint8)
     frame = frame.copy()
 
-    for (y,x) in keypoint_coordinate_list:
+    body_parts = [
+    "nose", "left eye", "right eye", "left ear", "right ear",
+    "left shoulder", "right shoulder", "left elbow", "right elbow",
+    "left wrist", "right wrist", "left hip", "right hip",
+    "left knee", "right knee", "left ankle", "right ankle"]
+
+    for i, (y,x) in enumerate(keypoint_coordinate_list):
         cv.circle(frame, (x,y), radius=3, color=(0,0,255), thickness=-1)
+        cv.putText(frame, body_parts[i], (x + 5, y - 5), cv.FONT_HERSHEY_SIMPLEX,
+               fontScale=0.2, color=(255, 255, 255), thickness=1)
         
     frame = cv.resize(frame, (640,480), interpolation=cv.INTER_CUBIC)    
     cv.imshow('frame',frame)
