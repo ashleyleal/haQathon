@@ -52,6 +52,12 @@ def run_pose_estimation(image_bytes: bytes):
 
     # Postprocess
     keypoints = keypoint_processor_numpy(output_tensor, scaler_height, scaler_width)
+    posture = check_posture(keypoints)
     return {
-        "keypoints": [tuple(map(int, pt)) for pt in keypoints]
+        "good": posture,
+        # "keypoints": [tuple(map(int, pt)) for pt in keypoints]
     }
+
+def check_posture(keypoints):
+    # FIXME: Implement posture checking logic
+    return True
