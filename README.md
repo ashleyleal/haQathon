@@ -4,10 +4,10 @@ Poor posture in the workplace can lead to chronic pain, decreased productivity, 
 ## Team
 Made by:
 - Thomas Lascaud, tlascaud@qti.qualcomm.com
-- Ashley Nicole Leal 
-- Lucie Yang 
-- Laura Lin
-- Keshavadithya Subramanya
+- Ashley Nicole Leal, aleal@qti.qualcomm.com
+- Lucie Yang, luciyang@qti.qualcomm.com
+- Laura Lin, laurlin@qti.qualcomm.com
+- Keshavadithya Subramanya, keshavad@qti.qualcomm.com
 
 
 ## Setup
