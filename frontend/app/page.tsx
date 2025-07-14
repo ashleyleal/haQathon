@@ -10,19 +10,22 @@ const Home: React.FC = () => {
   const [keypoints, setKeypoints] = useState<[number, number][] | null>(null);
   
   // Bad posture tracking
-  const [badPostureStartTime, setBadPostureStartTime] = useState<number | null>(null);
   const [badPostureDuration, setBadPostureDuration] = useState<number>(0);
   const [isInBadPosture, setIsInBadPosture] = useState<boolean>(false);
+
+  // Good posture tracking
+  const [goodPostureDuration, setGoodPostureDuration] = useState<number>(0);
+  const [isInGoodPosture, setIsInGoodPosture] = useState<boolean>(false);
 
   // Load beep sound
   const beepRef = useRef<HTMLAudioElement | null>(null);
 
   // Keypoint names and connections for pose visualization
   const keypointNames = [
-    'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
-    'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
-    'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
-    'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+    'nose', 'left eye', 'right eye', 'left ear', 'right ear',
+    'left shoulder', 'right shoulder', 'left elbow', 'right elbow',
+    'left wrist', 'right wrist', 'left hip', 'right hip',
+    'left knee', 'right knee', 'left ankle', 'right ankle'
   ];
 
   // Define skeleton connections 
@@ -118,7 +121,6 @@ const Home: React.FC = () => {
           if (response.ok) {
             setIsGood(result.good);
             setKeypoints(result.keypoints.slice(0, 13) || []);
-            // console.log('Keypoints:', result.keypoints.slice(0, 13));
           } else {
             setIsGood(null);
             setKeypoints([]);
@@ -151,7 +153,6 @@ const Home: React.FC = () => {
         overlayCanvas.style.left = '0';
         overlayCanvas.style.pointerEvents = 'none';
         
-        // Clear canvas
         context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
         
         // Calculate scaling factors from model input (256x192) to video display
@@ -235,13 +236,35 @@ const Home: React.FC = () => {
     };
   }, [isInBadPosture]);
 
+  // Update good posture duration
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (isInGoodPosture) {
+      timer = setInterval(() => {
+        setGoodPostureDuration((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setGoodPostureDuration(0);
+    }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [isInGoodPosture]);
+
   useEffect(() => {
     if (isGood === false) {
       if (!isInBadPosture) {
         // Start tracking bad posture
         setIsInBadPosture(true);
-        setBadPostureStartTime(Date.now());
       }
+      // Stop tracking good posture
+      setIsInGoodPosture(false);
+      setGoodPostureDuration(0);
+      
       if (badPostureDuration == 5) {
         playBeep();
       } else if (badPostureDuration > 60 && badPostureDuration < 63){ // play for 3 seconds
@@ -249,11 +272,21 @@ const Home: React.FC = () => {
       } else if (badPostureDuration >= 120) { // play forever
         playBeep();
       }
-    } else {
+    } else if (isGood === true) {
       // Reset bad posture tracking when posture is good
       setIsInBadPosture(false);
-      setBadPostureStartTime(null);
       setBadPostureDuration(0);
+      
+      if (!isInGoodPosture) {
+        // Start tracking good posture
+        setIsInGoodPosture(true);
+      }
+    } else {
+      // Reset both when posture is unknown
+      setIsInBadPosture(false);
+      setBadPostureDuration(0);
+      setIsInGoodPosture(false);
+      setGoodPostureDuration(0);
     }
   }, [isGood, badPostureDuration, isInBadPosture]);
 
@@ -295,7 +328,7 @@ const Home: React.FC = () => {
         position: 'relative',
       }}
     >
-      {/* Stopwatch for bad posture duration - positioned on the right */}
+      {/* Stopwatch for bad posture duration */}
       {isInBadPosture && (
         <div
           style={{
@@ -318,6 +351,33 @@ const Home: React.FC = () => {
           ⏱️ Bad posture for:<br />
           <span style={{ fontSize: '1.6rem', color: '#d63384' }}>
             {formatDuration(badPostureDuration)}
+          </span>
+        </div>
+      )}
+
+      {/* Stopwatch for good posture duration */}
+      {isInGoodPosture && (
+        <div
+          style={{
+            position: 'fixed',
+            top: '2rem',
+            right: '2rem',
+            padding: '1rem 2rem',
+            borderRadius: '12px',
+            backgroundColor: '#fff3cd',
+            border: '2px solid #ffeaa7',
+            color: '#856404',
+            fontSize: '1.4rem',
+            fontWeight: 'bold',
+            textAlign: 'center',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            zIndex: 1000,
+            minWidth: '200px',
+          }}
+        >
+          ⏱️ Good posture for:<br />
+          <span style={{ fontSize: '1.6rem', color: '#28a745' }}>
+            {formatDuration(goodPostureDuration)}
           </span>
         </div>
       )}
