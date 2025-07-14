@@ -11,27 +11,36 @@ Developed by:
 
 
 ## Setup
+### Prerequisites
+Python >=3.9 and <=3.11 installed
+Node.js installed
+npm installed
+git installed
 
-### Backend
+### 1. Clone the repository
+
+### 2. Backend
 Download `hrnet_pose-hrnetpose-float.onnx` from here: https://aihub.qualcomm.com/compute/models/hrnet_pose and put it in pose-detect
 > Choose ONNX Runtime > float
 
 Install dependencies
 ```
 cd pose-detect
+python -m venv venv
+source venv/bin/activate # on Windows use: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-Run
+Run the backend server
 ```
-cd pose-detect
 fastapi dev backend.py
 ```
 
-### Frontend
+### 3. Frontend
 Run 
 ```
 cd frontend
+npm install
 npm run dev
 ```
 Go to http://localhost:3000
