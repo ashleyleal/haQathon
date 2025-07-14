@@ -18,6 +18,10 @@ npm installed
 git installed
 
 ### 1. Clone the repository
+```
+git clone https://github.com/ashleyleal/haQathon.git
+cd haQathon
+```
 
 ### 2. Backend
 Download `hrnet_pose-hrnetpose-float.onnx` from here: https://aihub.qualcomm.com/compute/models/hrnet_pose and put it in pose-detect
