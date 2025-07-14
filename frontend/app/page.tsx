@@ -96,11 +96,11 @@ const Home: React.FC = () => {
           if (response.ok) {
             setIsGood(result.good);
           } else {
-            setIsGood(false);
+            setIsGood(null);
           }
         } catch (error) {
           console.error('Error sending image to backend:', error);
-          setIsGood(false);
+          setIsGood(null);
         }
       }
     }
