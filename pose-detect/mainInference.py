@@ -83,7 +83,10 @@ def check_posture(keypoints):
     Check sitting posture based on visible keypoints.
     Returns (is_good_posture: bool)
     """
-
+    # n = np.random.randint(0, 100)
+    # if n < 10:
+    #     return False
+    # return True
     # required keypoints (err if missing)
     left_shoulder = np.array(keypoints[KEYPOINT_IDX["left_shoulder"]])
     right_shoulder = np.array(keypoints[KEYPOINT_IDX["right_shoulder"]])
@@ -145,42 +148,42 @@ def check_posture(keypoints):
     if lateral_shift > 0.15 * shoulder_width:
         flags.append("leaning to one side")
 
-    # 5. Hunched Back / Rolled Shoulders
-    if (left_elbow[1] < left_shoulder[1] - 0.2 * shoulder_width or
-        right_elbow[1] > right_shoulder[1] + 0.2 * shoulder_width):
-        flags.append("hunched back or rolled shoulders")
+    # # 5. Hunched Back / Rolled Shoulders
+    # if (left_elbow[1] < left_shoulder[1] - 0.2 * shoulder_width or
+    #     right_elbow[1] > right_shoulder[1] + 0.2 * shoulder_width):
+    #     flags.append("hunched back or rolled shoulders")
 
-    # 6. Elevated Shoulders
-    left_shoulder_ear_dist = abs(left_shoulder[0] - left_ear[0])
-    right_shoulder_ear_dist = abs(right_shoulder[0] - right_ear[0])
-    if left_shoulder_ear_dist < 0.1 * shoulder_width or right_shoulder_ear_dist < 0.1 * shoulder_width:
-        flags.append("elevated shoulders")
+    # # 6. Elevated Shoulders
+    # left_shoulder_ear_dist = abs(left_shoulder[0] - left_ear[0])
+    # right_shoulder_ear_dist = abs(right_shoulder[0] - right_ear[0])
+    # if left_shoulder_ear_dist < 0.1 * shoulder_width or right_shoulder_ear_dist < 0.1 * shoulder_width:
+    #     flags.append("elevated shoulders")
 
-    # 7. Asymmetrical Arms
-    wrist_height_diff = abs(left_wrist[0] - right_wrist[0])
-    if wrist_height_diff > 0.15 * shoulder_width:
-        flags.append("asymmetrical arm positioning")
+    # # 7. Asymmetrical Arms
+    # wrist_height_diff = abs(left_wrist[0] - right_wrist[0])
+    # if wrist_height_diff > 0.15 * shoulder_width:
+    #     flags.append("asymmetrical arm positioning")
 
-    # 8. Elbows Too Far Out (Winged Elbows)
-    elbow_span = np.linalg.norm(left_elbow - right_elbow)
-    if elbow_span > 1.5 * shoulder_width:
-        flags.append("elbows flared out (winged)")
+    # # 8. Elbows Too Far Out (Winged Elbows)
+    # elbow_span = np.linalg.norm(left_elbow - right_elbow)
+    # if elbow_span > 1.5 * shoulder_width:
+    #     flags.append("elbows flared out (winged)")
 
-    # 9. Collapsed Upper Body
-    torso_length = abs(avg_shoulder_y - avg_hip_y)
-    if torso_length < 0.4 * shoulder_width:
-        flags.append("collapsed upper body")
+    # # 9. Collapsed Upper Body
+    # torso_length = abs(avg_shoulder_y - avg_hip_y)
+    # if torso_length < 0.4 * shoulder_width:
+    #     flags.append("collapsed upper body")
 
-    # 10. Head Tilt
-    if left_eye is not None and right_eye is not None:
-        eye_height_diff = abs(left_eye[0] - right_eye[0])
-        if eye_height_diff > 0.05 * shoulder_width:
-            flags.append("head tilted to one side")
+    # # 10. Head Tilt
+    # if left_eye is not None and right_eye is not None:
+    #     eye_height_diff = abs(left_eye[0] - right_eye[0])
+    #     if eye_height_diff > 0.05 * shoulder_width:
+    #         flags.append("head tilted to one side")
 
-    # 11. Reclined Sitting Posture
-    if left_knee is not None and right_knee is not None:
-        avg_knee_y = (left_knee[0] + right_knee[0]) / 2
-        if avg_hip_y > avg_knee_y:  # hips lower than knees = likely reclined
-            flags.append("reclined or slumped sitting position")
+    # # 11. Reclined Sitting Posture
+    # if left_knee is not None and right_knee is not None:
+    #     avg_knee_y = (left_knee[0] + right_knee[0]) / 2
+    #     if avg_hip_y > avg_knee_y:  # hips lower than knees = likely reclined
+    #         flags.append("reclined or slumped sitting position")
 
     return len(flags) == 0
