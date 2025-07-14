@@ -5,7 +5,9 @@ import React, { useRef, useEffect, useState } from 'react';
 const Home: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const overlayCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const [isGood, setIsGood] = useState<boolean | null>(null);
+  const [keypoints, setKeypoints] = useState<[number, number][] | null>(null);
   
   // Bad posture tracking
   const [badPostureStartTime, setBadPostureStartTime] = useState<number | null>(null);
@@ -14,6 +16,26 @@ const Home: React.FC = () => {
 
   // Load beep sound
   const beepRef = useRef<HTMLAudioElement | null>(null);
+
+  // Keypoint names and connections for pose visualization
+  const keypointNames = [
+    'nose', 'left_eye', 'right_eye', 'left_ear', 'right_ear',
+    'left_shoulder', 'right_shoulder', 'left_elbow', 'right_elbow',
+    'left_wrist', 'right_wrist', 'left_hip', 'right_hip',
+    'left_knee', 'right_knee', 'left_ankle', 'right_ankle'
+  ];
+
+  // Define skeleton connections 
+  const connections = [
+    // Face
+    [0, 1], [0, 2], [1, 3], [2, 4],
+    // Arms
+    [5, 6], [5, 7], [6, 8], [7, 9], [8, 10],
+    // Torso
+    [5, 11], [6, 12], [11, 12]
+  ];
+
+  // const connections = [[1, 2], [3, 4], [5, 6], [7, 8], [11, 12]];
 
   // Create beep sound
   const playBeep = () => {
@@ -95,16 +117,104 @@ const Home: React.FC = () => {
           const result = await response.json();
           if (response.ok) {
             setIsGood(result.good);
+            setKeypoints(result.keypoints.slice(0, 13) || []);
+            // console.log('Keypoints:', result.keypoints.slice(0, 13));
           } else {
             setIsGood(null);
+            setKeypoints([]);
           }
         } catch (error) {
           console.error('Error sending image to backend:', error);
           setIsGood(null);
+          setKeypoints([]);
         }
       }
     }
   };
+
+  // Draw keypoints and skeleton on video
+  const drawKeypoints = () => {
+    const video = videoRef.current;
+    const overlayCanvas = overlayCanvasRef.current;
+
+    if (video && overlayCanvas && keypoints) {
+      const context = overlayCanvas.getContext('2d');
+      if (context) {
+        // Set canvas size to match video display size
+        const videoRect = video.getBoundingClientRect();
+        overlayCanvas.width = video.videoWidth || 640;
+        overlayCanvas.height = video.videoHeight || 480;
+        overlayCanvas.style.width = `${videoRect.width}px`;
+        overlayCanvas.style.height = `${videoRect.height}px`;
+        overlayCanvas.style.position = 'absolute';
+        overlayCanvas.style.top = '0';
+        overlayCanvas.style.left = '0';
+        overlayCanvas.style.pointerEvents = 'none';
+        
+        // Clear canvas
+        context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        
+        // Calculate scaling factors from model input (256x192) to video display
+        const scaleX = overlayCanvas.width / 256 * 1.1;
+        const scaleY = overlayCanvas.height / 192;
+
+        // offsets i found through trial and error
+        const offsetX = video.videoWidth * 0.1;
+        const offsetY = video.videoHeight * 0.125;
+        
+        // Draw connection lines
+        context.strokeStyle = isGood ? '#28a745' : '#dc3545';
+        context.lineWidth = 2;
+        connections.forEach(([startIdx, endIdx]) => {
+          if (startIdx < keypoints.length && endIdx < keypoints.length) {
+            const [y1, x1] = keypoints[startIdx];
+            const [y2, x2] = keypoints[endIdx];
+            
+            context.beginPath();
+            context.moveTo(x1 * scaleX + offsetX, y1 * scaleY - offsetY);
+            context.lineTo(x2 * scaleX + offsetX, y2 * scaleY - offsetY);
+            context.stroke();
+          }
+        });
+
+        // Draw keypoints
+        keypoints.forEach(([y, x], index) => {
+          const scaledX = x * scaleX;
+          const scaledY = y * scaleY;
+
+          // Draw circle
+          context.beginPath();
+          context.arc(scaledX + offsetX, scaledY - offsetY, 4, 0, 2 * Math.PI);
+          context.fillStyle = isGood ? '#28a745' : '#dc3545';
+          context.fill();
+          context.strokeStyle = '#ffffff';
+          context.lineWidth = 1;
+          context.stroke();
+
+          // Labels
+          context.fillStyle = '#ffffff';
+          context.font = '10px Arial';
+          context.fillText(keypointNames[index] || index.toString(), scaledX + 6, scaledY - 6);
+        });
+      }
+    }
+  };
+
+  // Draw keypoints when they change
+  useEffect(() => {
+    if (keypoints) {
+      requestAnimationFrame(drawKeypoints);
+    } else {
+      // Clear the overlay canvas when no keypoints
+      const overlayCanvas = overlayCanvasRef.current;
+      if (overlayCanvas) {
+        const context = overlayCanvas.getContext('2d');
+        if (context) {
+          context.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        }
+      }
+    }
+  }, [keypoints, isGood]);
 
   // Update bad posture duration
   useEffect(() => {
@@ -233,19 +343,22 @@ const Home: React.FC = () => {
         {headerText}
       </h1>
 
-      <video
-        ref={videoRef}
-        autoPlay
-        playsInline
-        width={640}
-        height={480}
-        style={{
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          marginBottom: '1rem',
-        }}
-      />
-      <canvas ref={canvasRef} style={{ display: 'none' }} />
+      <div style={{ position: 'relative', display: 'inline-block' }}>
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          width={640}
+          height={480}
+          style={{
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+            marginBottom: '1rem',
+          }}
+        />
+        <canvas ref={canvasRef} style={{ display: 'none' }} />
+        <canvas ref={overlayCanvasRef} style={{ display: keypoints ? 'block' : 'none' }} />
+      </div>
     </div>
   );
 };

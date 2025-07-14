@@ -75,7 +75,7 @@ def run_pose_estimation(image_bytes: bytes):
     posture = check_posture(keypoints)
     return {
         "good": posture,
-        # "keypoints": [tuple(map(int, pt)) for pt in keypoints]
+        "keypoints": [tuple(map(float, pt)) for pt in keypoints]
     }
 
 def check_posture(keypoints):
