@@ -1,3 +1,5 @@
+# Bad Posture Detector 9000
+
 ## Setup
 
 ### Frontend
